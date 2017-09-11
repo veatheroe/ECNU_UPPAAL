@@ -12,13 +12,14 @@ int mat[4][4] = {{1,0,0,1},
                  {1,0,0,1},
                  {1,0,0,1},
                  {0,1,1,1}};
+int waitList[4] = {0,0,0,0};
 broadcast chan request[N],request2[N],confirm[N],confirm2[N],cross[N],alloc[N], popFirst;
 
 
 const int delay = 1;
 const int tout = 4;
 const int tout_resend = 8;
-const int tout_wait = 500;
+const int tout_wait = 8;
 int[0, N] list[N+1];
 int[0, N] len;
 
@@ -31,6 +32,7 @@ int testtemp = 0;
 	<template>
 		<name x="5" y="5">Controller</name>
 		<declaration>// Place local declarations here.
+int re_alloc = 0;
 int alloc_id = 0;
 clock t_local_m;
 int old_id = 10;
@@ -43,6 +45,14 @@ void dequeue(id_t i)
        i++;
     }
     list[i] = 0;
+}
+bool checkStady(){
+    for(int i = 0;i&lt;N;i++){
+        if(waitList[i]!=0)
+            return false;
+    }
+    return true;
+
 }
 
 void enqueue(id_t element)
@@ -78,27 +88,45 @@ id_t pop()
     
     return list[0]-1;
 }</declaration>
-		<location id="id0" x="-144" y="-34">
+		<location id="id0" x="-110" y="76">
+			<urgent/>
+		</location>
+		<location id="id1" x="-144" y="-34">
 			<name x="-154" y="-68">Idle</name>
 		</location>
-		<location id="id1" x="204" y="-34">
+		<location id="id2" x="204" y="-34">
 			<name x="194" y="-68">Busy</name>
 			<urgent/>
 		</location>
-		<init ref="id0"/>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id0"/>
-			<label kind="synchronisation" x="34" y="0">alloc[alloc_id]!</label>
-			<nail x="34" y="51"/>
-		</transition>
+		<init ref="id1"/>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id1"/>
+			<label kind="synchronisation" x="-119" y="25">alloc[re_alloc]!</label>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="select" x="-272" y="17">f:id_t</label>
+			<label kind="guard" x="-255" y="76">len&gt;0 &amp;&amp;waitList[f]&gt;0</label>
+			<label kind="synchronisation" x="-255" y="93">request2[f]?</label>
+			<label kind="assignment" x="-255" y="110">re_alloc = f</label>
+			<nail x="-272" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="-8" y="-17">alloc[alloc_id]!</label>
+			<nail x="34" y="51"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id2"/>
 			<label kind="select" x="-75" y="-85">e:id_t</label>
-			<label kind="guard" x="-76" y="-102">len==0 || len&gt;0&amp;&amp;mat[e][pop()] ==1</label>
+			<label kind="guard" x="-76" y="-102">len==0 || 
+(len&gt;0&amp;&amp;mat[e][pop()] ==1&amp;&amp;waitList)</label>
 			<label kind="synchronisation" x="-76" y="-68">request2[e]?</label>
-			<label kind="assignment" x="-59" y="-34">alloc_id = e,enqueue(e)</label>
+			<label kind="assignment" x="-8" y="-34">alloc_id = e,enqueue(e)</label>
 		</transition>
 	</template>
 	<template>
@@ -121,34 +149,35 @@ int poisonNum(int lambda){
     while(p&lt;L);
     return k-1 &lt; 1 ? 1 : k-1;
 }</declaration>
-		<location id="id2" x="-714" y="-229">
+		<location id="id3" x="-714" y="-229">
 			<name x="-724" y="-263">Intial</name>
 			<label kind="invariant" x="-790" y="-212">t_local_v&lt;=t_0</label>
 		</location>
-		<location id="id3" x="-433" y="-229">
+		<location id="id4" x="-433" y="-229">
 			<name x="-443" y="-263">ApproachingNotConfirmed</name>
 			<label kind="invariant" x="-399" y="-238">t_local_v&lt;=tout_resend</label>
 			<label kind="exponentialrate" x="-443" y="-195">10</label>
 		</location>
-		<location id="id4" x="-433" y="-102">
+		<location id="id5" x="-433" y="-102">
 			<name x="-450" y="-93">ApproachingConfirmed</name>
 			<label kind="invariant" x="-450" y="-76">t_local_v&lt;=vdt</label>
 		</location>
-		<location id="id5" x="-578" y="-102">
+		<location id="id6" x="-578" y="-102">
 			<name x="-671" y="-85">CrossIntersection</name>
 			<urgent/>
 		</location>
-		<init ref="id2"/>
+		<init ref="id3"/>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id3"/>
+			<source ref="id5"/>
+			<target ref="id4"/>
 			<label kind="guard" x="-365" y="-187">t_local_v ==t_app_H</label>
-			<label kind="assignment" x="-391" y="-136">t_local_v:=0</label>
+			<label kind="assignment" x="-391" y="-136">t_local_v:=0,
+waitList[id]++</label>
 			<nail x="-365" y="-178"/>
 		</transition>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id3"/>
+			<source ref="id4"/>
+			<target ref="id4"/>
 			<label kind="guard" x="-476" y="-348">t_local_v==tout_resend</label>
 			<label kind="synchronisation" x="-476" y="-331">request[id]!</label>
 			<label kind="assignment" x="-476" y="-314">t_local_v:=0</label>
@@ -156,25 +185,26 @@ int poisonNum(int lambda){
 			<nail x="-391" y="-297"/>
 		</transition>
 		<transition>
-			<source ref="id5"/>
-			<target ref="id2"/>
-			<label kind="synchronisation" x="-705" y="-170">cross[id]!</label>
+			<source ref="id6"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-731" y="-153">cross[id]!</label>
+			<label kind="assignment" x="-731" y="-170">waitList[id] = 0</label>
 		</transition>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id5"/>
+			<source ref="id5"/>
+			<target ref="id6"/>
 			<label kind="guard" x="-561" y="-127">t_local_v==vdt</label>
 			<label kind="assignment" x="-560" y="-102">t_local_v:=0</label>
 		</transition>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id4"/>
+			<source ref="id4"/>
+			<target ref="id5"/>
 			<label kind="synchronisation" x="-484" y="-187">confirm2[id]?</label>
 			<label kind="assignment" x="-603" y="-170">t_local_v:=0,vdt = poisonNum(3)</label>
 		</transition>
 		<transition>
-			<source ref="id2"/>
-			<target ref="id3"/>
+			<source ref="id3"/>
+			<target ref="id4"/>
 			<label kind="synchronisation" x="-560" y="-246">request[id]!</label>
 			<label kind="assignment" x="-646" y="-229">t_local_v:=0,requestSent:=1</label>
 		</transition>
@@ -241,67 +271,70 @@ id_t pop()
     
     return list[0]-1;
 }</declaration>
-		<location id="id6" x="-442" y="-110">
+		<location id="id7" x="-442" y="-110">
 			<name x="-510" y="-127">Ready</name>
 		</location>
-		<location id="id7" x="-297" y="-110">
+		<location id="id8" x="-297" y="-110">
 			<name x="-322" y="-144">occupied</name>
 			<urgent/>
 		</location>
-		<location id="id8" x="-119" y="-110">
+		<location id="id9" x="-119" y="-110">
 			<name x="-129" y="-144">Waiting</name>
 			<label kind="invariant" x="-136" y="-93">t_local_m&lt;=tout_wait</label>
 		</location>
-		<init ref="id6"/>
+		<init ref="id7"/>
 		<transition>
-			<source ref="id8"/>
-			<target ref="id6"/>
-			<label kind="synchronisation" x="-323" y="-238">cross[id]?</label>
-			<label kind="assignment" x="-323" y="-221">t_local_m :=0,
+			<source ref="id9"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="-357" y="-246">cross[id]?</label>
+			<label kind="assignment" x="-357" y="-229">t_local_m :=0,
 dequeueById(id),
 len--</label>
 			<nail x="-442" y="-195"/>
 		</transition>
 		<transition>
-			<source ref="id8"/>
-			<target ref="id6"/>
+			<source ref="id9"/>
+			<target ref="id7"/>
 			<label kind="guard" x="-374" y="-34">t_local_m==tout_wait</label>
 			<label kind="assignment" x="-374" y="-51">t_local_m:=0</label>
 			<nail x="-442" y="-34"/>
 		</transition>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id8"/>
-			<label kind="synchronisation" x="-263" y="-136">confirm[id]!</label>
+			<source ref="id8"/>
+			<target ref="id9"/>
+			<label kind="synchronisation" x="-272" y="-127">confirm[id]!</label>
+			<label kind="assignment" x="-279" y="-110">t_local_m = 0</label>
 		</transition>
 		<transition>
-			<source ref="id6"/>
-			<target ref="id7"/>
+			<source ref="id7"/>
+			<target ref="id8"/>
 			<label kind="synchronisation" x="-399" y="-127">alloc[id]?</label>
 		</transition>
 	</template>
 	<template>
 		<name>In_Channel</name>
 		<parameter>id_t id</parameter>
-		<location id="id9" x="0" y="0">
-			<name x="-25" y="-34">Idle</name>
+		<location id="id10" x="-85" y="0">
+			<name x="-110" y="-34">Idle</name>
 		</location>
-		<location id="id10" x="110" y="0">
-			<name x="119" y="-34">getRequest</name>
-			<urgent/>
+		<location id="id11" x="195" y="0">
+			<name x="204" y="-34">getRequest</name>
+			<label kind="invariant" x="185" y="17">in_clock[id] &lt;=delay</label>
 		</location>
-		<init ref="id9"/>
+		<init ref="id10"/>
 		<transition>
-			<source ref="id10"/>
-			<target ref="id9"/>
-			<label kind="synchronisation" x="17" y="17">request2[id]!</label>
+			<source ref="id11"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="17" y="25">request2[id]!</label>
+			<label kind="assignment" x="17" y="42">in_clock[id] = 0</label>
 			<nail x="76" y="17"/>
 			<nail x="25" y="17"/>
 		</transition>
 		<transition>
-			<source ref="id9"/>
-			<target ref="id10"/>
+			<source ref="id10"/>
+			<target ref="id11"/>
 			<label kind="synchronisation" x="17" y="-34">request[id]?</label>
+			<label kind="assignment" x="17" y="-51">in_clock[id] = 0</label>
 			<nail x="25" y="-17"/>
 			<nail x="85" y="-17"/>
 		</transition>
@@ -309,24 +342,27 @@ len--</label>
 	<template>
 		<name>Out_Channel</name>
 		<parameter>id_t id</parameter>
-		<location id="id11" x="0" y="0">
-			<name x="-10" y="-34">Idle</name>
+		<location id="id12" x="-76" y="0">
+			<name x="-86" y="-34">Idle</name>
 		</location>
-		<location id="id12" x="144" y="0">
-			<name x="134" y="-34">getRequest</name>
+		<location id="id13" x="222" y="0">
+			<name x="212" y="-34">getRequest</name>
+			<label kind="invariant" x="212" y="-51">out_clock[id] &lt;=delay</label>
 		</location>
-		<init ref="id11"/>
+		<init ref="id12"/>
 		<transition>
-			<source ref="id12"/>
-			<target ref="id11"/>
+			<source ref="id13"/>
+			<target ref="id12"/>
 			<label kind="synchronisation" x="34" y="25">confirm2[id]!</label>
+			<label kind="assignment" x="34" y="42">out_clock[id] = 0</label>
 			<nail x="119" y="25"/>
 			<nail x="34" y="25"/>
 		</transition>
 		<transition>
-			<source ref="id11"/>
-			<target ref="id12"/>
+			<source ref="id12"/>
+			<target ref="id13"/>
 			<label kind="synchronisation" x="34" y="-42">confirm[id]?</label>
+			<label kind="assignment" x="34" y="-59">out_clock[id] = 0</label>
 			<nail x="34" y="-25"/>
 			<nail x="119" y="-25"/>
 		</transition>
@@ -337,8 +373,16 @@ system Vehicle,Controller,Timer,In_Channel,Out_Channel;
     </system>
 	<queries>
 		<query>
-			<formula>A[]not deadlock</formula>
-			<comment></comment>
+			<formula>A[]not deadlock
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>Vehicle(1).ApproachingNotConfirmed --&gt; Vehicle(1).CrossIntersection
+			</formula>
+			<comment>
+			</comment>
 		</query>
 	</queries>
 </nta>
