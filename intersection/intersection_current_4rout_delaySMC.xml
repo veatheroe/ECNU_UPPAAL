@@ -10,7 +10,7 @@ const int travelTime = 4;
 int initial = 0;
 const int t_0 = 1;
 const int t_app_H = 5; 
-const int N = 12;
+const int N = 4;
 typedef int[0,N-1] id_t;
 //four single line matrix
 int mat[4][4] = {{0,0,1,0},
@@ -18,7 +18,7 @@ int mat[4][4] = {{0,0,1,0},
                  {1,0,0,0},
                  {0,1,0,0}};
 //eight line matrix
-int matrix_t[12][12] = {{0,1,0,0,1,1,1,1,1,0,1,1},
+int matrix_eight[12][12] = {{0,1,0,0,1,1,1,1,1,0,1,1},
                           {1,0,1,0,1,1,1,1,0,0,1,1},
                           {0,1,0,0,1,1,1,0,1,1,1,1},
                           {0,1,0,0,0,1,0,0,1,1,1,1},
@@ -31,14 +31,14 @@ int matrix_t[12][12] = {{0,1,0,0,1,1,1,1,1,0,1,1},
                           {1,1,1,1,1,0,0,1,1,1,0,1},
                           {0,1,1,1,0,1,1,1,1,0,1,0}};
 //how long did one Vehicle waiting in the ApproachingNotConfirmed state
-int waitList[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
+int waitList[4] = {0,0,0,0};
 broadcast chan request[N],request2[N],confirm[N],confirm2[N],cross[N],alloc[N], popFirst;
 
 
-//const int delay = 1;
+const int delay = 1;
 const int tout = 4;
 const int tout_resend = 8;
-const int tout_wait = 5;
+const int tout_wait = 8;
 int[0, N] list[N+1];
 int[0, N] len;
 
@@ -46,9 +46,8 @@ clock t_global;
 clock   in_clock[N];
 clock out_clock[N];
 int testtemp = 0;
-int vPath[N];
-hybrid clock pathTime[N];
-hybrid clock gPath;
+hybrid clock dClock = 0.5;
+
 </declaration>
 	<template>
 		<name x="5" y="5">Controller</name>
@@ -122,7 +121,7 @@ bool checkConflit(id_t current,int len){
     int index = 0;
     if(len&gt;0){
         for(index = 0;index&lt;len;index++){
-            if(matrix_t[index][current]==0)
+            if(mat[index][current]==0)
                 return false;
         }
         return true;
@@ -137,7 +136,6 @@ bool checkConflit(id_t current,int len){
 		</location>
 		<location id="id2" x="-144" y="-34">
 			<name x="-154" y="-68">Idle</name>
-			<label kind="exponentialrate" x="-154" y="0">1000</label>
 		</location>
 		<location id="id3" x="204" y="-34">
 			<name x="194" y="-68">Busy</name>
@@ -218,19 +216,16 @@ void accumulate(id_t i){
 }</declaration>
 		<location id="id4" x="-714" y="-229">
 			<name x="-724" y="-263">Intial</name>
-			<label kind="invariant" x="-724" y="-212">pathTime[id]' ==0</label>
 			<label kind="exponentialrate" x="-722" y="-204">100</label>
 		</location>
 		<location id="id5" x="-433" y="-229">
 			<name x="-443" y="-263">ApproachingNotConfirmed</name>
-			<label kind="invariant" x="-399" y="-238">t_local_v&lt;=tout_resend&amp;&amp;
-pathTime[id]' ==1</label>
+			<label kind="invariant" x="-399" y="-238">t_local_v&lt;=tout_resend</label>
 			<label kind="exponentialrate" x="-443" y="-195">10</label>
 		</location>
 		<location id="id6" x="-433" y="-102">
 			<name x="-450" y="-93">ApproachingConfirmed</name>
-			<label kind="invariant" x="-450" y="-76">t_local_v&lt;=vdt&amp;&amp;
-pathTime[id]' ==1</label>
+			<label kind="invariant" x="-450" y="-76">t_local_v&lt;=vdt</label>
 		</location>
 		<location id="id7" x="-578" y="-102">
 			<name x="-671" y="-85">CrossIntersection</name>
@@ -257,9 +252,8 @@ accumulate(id)</label>
 		<transition>
 			<source ref="id7"/>
 			<target ref="id4"/>
-			<label kind="synchronisation" x="-748" y="-136">cross[id]!</label>
-			<label kind="assignment" x="-790" y="-170">waitList[id] = 0,vNum++,
-vPath[id] =0</label>
+			<label kind="synchronisation" x="-731" y="-153">cross[id]!</label>
+			<label kind="assignment" x="-790" y="-170">waitList[id] = 0,vNum++</label>
 		</transition>
 		<transition>
 			<source ref="id6"/>
@@ -271,8 +265,7 @@ vPath[id] =0</label>
 			<source ref="id5"/>
 			<target ref="id6"/>
 			<label kind="synchronisation" x="-484" y="-187">confirm2[id]?</label>
-			<label kind="assignment" x="-603" y="-170">t_local_v:=0,vdt = poisonNum(3),
-vPath[id] =1</label>
+			<label kind="assignment" x="-603" y="-170">t_local_v:=0,vdt = poisonNum(3)</label>
 		</transition>
 		<transition>
 			<source ref="id4"/>
@@ -280,13 +273,6 @@ vPath[id] =1</label>
 			<label kind="synchronisation" x="-560" y="-246">request[id]!</label>
 			<label kind="assignment" x="-646" y="-229">t_local_v:=0,requestSent:=1</label>
 		</transition>
-	</template>
-	<template>
-		<name>Global</name>
-		<location id="id8" x="0" y="0">
-			<label kind="invariant" x="-144" y="17">gPath' ==sum(i:id_t) vPath[i]</label>
-		</location>
-		<init ref="id8"/>
 	</template>
 	<template>
 		<name>Timer</name>
@@ -350,21 +336,21 @@ id_t pop()
     
     return list[0]-1;
 }</declaration>
-		<location id="id9" x="-442" y="-110">
+		<location id="id8" x="-442" y="-110">
 			<name x="-510" y="-127">Ready</name>
 		</location>
-		<location id="id10" x="-297" y="-110">
+		<location id="id9" x="-297" y="-110">
 			<name x="-322" y="-144">occupied</name>
 			<urgent/>
 		</location>
-		<location id="id11" x="-119" y="-110">
+		<location id="id10" x="-119" y="-110">
 			<name x="-129" y="-144">Waiting</name>
 			<label kind="invariant" x="-136" y="-93">t_local_m&lt;=tout_wait</label>
 		</location>
-		<init ref="id9"/>
+		<init ref="id8"/>
 		<transition>
-			<source ref="id11"/>
-			<target ref="id9"/>
+			<source ref="id10"/>
+			<target ref="id8"/>
 			<label kind="synchronisation" x="-357" y="-246">cross[id]?</label>
 			<label kind="assignment" x="-357" y="-229">t_local_m :=0,
 dequeueById(id),
@@ -372,61 +358,48 @@ len--</label>
 			<nail x="-442" y="-195"/>
 		</transition>
 		<transition>
-			<source ref="id11"/>
-			<target ref="id9"/>
+			<source ref="id10"/>
+			<target ref="id8"/>
 			<label kind="guard" x="-374" y="-34">t_local_m==tout_wait</label>
 			<label kind="assignment" x="-374" y="-51">t_local_m:=0</label>
 			<nail x="-442" y="-34"/>
 		</transition>
 		<transition>
-			<source ref="id10"/>
-			<target ref="id11"/>
+			<source ref="id9"/>
+			<target ref="id10"/>
 			<label kind="synchronisation" x="-272" y="-127">confirm[id]!</label>
 			<label kind="assignment" x="-279" y="-110">t_local_m = 0</label>
 		</transition>
 		<transition>
-			<source ref="id9"/>
-			<target ref="id10"/>
+			<source ref="id8"/>
+			<target ref="id9"/>
 			<label kind="synchronisation" x="-399" y="-127">alloc[id]?</label>
 		</transition>
 	</template>
 	<template>
 		<name>In_Channel</name>
 		<parameter>id_t id</parameter>
-		<declaration>int delay = 0;
-int poisonNum(int lambda){
-    int k = 0;
-    int L = lambda;
-    double p = 0.0;
-    do{
-        k += 1;
-        p = p - ln(random(1));
-    }
-    while(p&lt;L);
-    return k-1 &lt; 1 ? 1 : k-1;
-}</declaration>
-		<location id="id12" x="-85" y="0">
+		<location id="id11" x="-85" y="0">
 			<name x="-110" y="-34">Idle</name>
 		</location>
-		<location id="id13" x="195" y="0">
+		<location id="id12" x="195" y="0">
 			<name x="204" y="-34">getRequest</name>
-			<label kind="invariant" x="185" y="17">in_clock[id] &lt;=delay</label>
+			<label kind="invariant" x="185" y="17">in_clock[id] &lt;=dClock</label>
 		</location>
-		<init ref="id12"/>
+		<init ref="id11"/>
 		<transition>
-			<source ref="id13"/>
-			<target ref="id12"/>
+			<source ref="id12"/>
+			<target ref="id11"/>
 			<label kind="synchronisation" x="17" y="25">request2[id]!</label>
 			<label kind="assignment" x="17" y="42">in_clock[id] = 0</label>
 			<nail x="76" y="17"/>
 			<nail x="25" y="17"/>
 		</transition>
 		<transition>
-			<source ref="id12"/>
-			<target ref="id13"/>
-			<label kind="synchronisation" x="8" y="-76">request[id]?</label>
-			<label kind="assignment" x="17" y="-51">in_clock[id] = 0,
-delay = poisonNum(1)</label>
+			<source ref="id11"/>
+			<target ref="id12"/>
+			<label kind="synchronisation" x="17" y="-34">request[id]?</label>
+			<label kind="assignment" x="17" y="-51">in_clock[id] = 0</label>
 			<nail x="25" y="-17"/>
 			<nail x="85" y="-17"/>
 		</transition>
@@ -434,89 +407,81 @@ delay = poisonNum(1)</label>
 	<template>
 		<name>Out_Channel</name>
 		<parameter>id_t id</parameter>
-		<declaration>int delay = 0;
-int poisonNum(int lambda){
-    int k = 0;
-    int L = lambda;
-    double p = 0.0;
-    do{
-        k += 1;
-        p = p - ln(random(1));
-    }
-    while(p&lt;L);
-    return k-1 &lt; 1 ? 1 : k-1;
-}</declaration>
-		<location id="id14" x="-76" y="0">
+		<location id="id13" x="-76" y="0">
 			<name x="-86" y="-34">Idle</name>
 		</location>
-		<location id="id15" x="222" y="0">
+		<location id="id14" x="222" y="0">
 			<name x="212" y="-34">getRequest</name>
-			<label kind="invariant" x="212" y="-51">out_clock[id] &lt;=delay</label>
+			<label kind="invariant" x="212" y="-51">out_clock[id] &lt;=dClock</label>
 		</location>
-		<init ref="id14"/>
+		<init ref="id13"/>
 		<transition>
-			<source ref="id15"/>
-			<target ref="id14"/>
+			<source ref="id14"/>
+			<target ref="id13"/>
 			<label kind="synchronisation" x="34" y="25">confirm2[id]!</label>
 			<label kind="assignment" x="34" y="42">out_clock[id] = 0</label>
 			<nail x="119" y="25"/>
 			<nail x="34" y="25"/>
 		</transition>
 		<transition>
-			<source ref="id14"/>
-			<target ref="id15"/>
+			<source ref="id13"/>
+			<target ref="id14"/>
 			<label kind="synchronisation" x="34" y="-42">confirm[id]?</label>
-			<label kind="assignment" x="34" y="-76">out_clock[id] = 0,
-delay = poisonNum(1)</label>
+			<label kind="assignment" x="34" y="-59">out_clock[id] = 0</label>
 			<nail x="34" y="-25"/>
 			<nail x="119" y="-25"/>
 		</transition>
 	</template>
+	<template>
+		<name>Control_Delay</name>
+		<declaration>clock localT;</declaration>
+		<location id="id15" x="-68" y="-59">
+			<label kind="invariant" x="-119" y="-42">localT&lt;=50&amp;&amp;
+dClock'==0</label>
+		</location>
+		<location id="id16" x="-178" y="-59">
+			<label kind="invariant" x="-246" y="-42">dClock'==0.1&amp;&amp;
+localT&lt;=2</label>
+		</location>
+		<location id="id17" x="-340" y="-59">
+			<label kind="invariant" x="-400" y="-42">localT&lt;=50&amp;&amp;
+dClock' ==0</label>
+		</location>
+		<init ref="id17"/>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id16"/>
+			<label kind="assignment" x="-76" y="-170">localT = 0</label>
+			<nail x="26" y="-59"/>
+			<nail x="26" y="-144"/>
+			<nail x="-178" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id15"/>
+			<label kind="assignment" x="-161" y="-110">localT = 0,vNum = 0</label>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id16"/>
+			<label kind="assignment" x="-322" y="-59">localT = 0</label>
+		</transition>
+	</template>
 	<system>// Place template instantiations here.
 // List one or more processes to be composed into a system.
-system Global,Vehicle,Controller,Timer,In_Channel,Out_Channel;
+system Vehicle,Controller,Timer,In_Channel,Out_Channel,Control_Delay;
     </system>
 	<queries>
 		<query>
-			<formula>Pr[pathTime[1]&lt;=10](&lt;&gt; In_Channel(1).delay&lt;10)
+			<formula>Pr [dClock&lt;=2] (&lt;&gt; t&lt;=50 &amp;&amp; vNum&gt;=18 || t&gt;52 &amp;&amp;t&lt;102 &amp;&amp; vNum&gt;=18 || t&gt;=104 &amp;&amp;t&lt;=154 &amp;&amp; vNum&gt;=18 || t&gt;=156 &amp;&amp;t&lt;=206 &amp;&amp; vNum&gt;=18 || t&gt;=208 &amp;&amp;t&lt;=258 &amp;&amp; vNum&gt;=18)
 			</formula>
 			<comment>
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t&lt;=200](&lt;&gt; exists (i:id_t) Vehicle(i).t_local_v&lt;5)
+			<formula>Pr [&lt;=1000] (&lt;&gt; waitList[0] == 8)
 			</formula>
 			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Pr [t&lt;=150] (&lt;&gt; (sum(i:id_t) waitList[i]&gt;0)&gt;5)
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>simulate 1 [&lt;=100] {In_Channel(0).delay}
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Pr [gPath&lt;=420] (&lt;&gt; t&gt;=100)
-			</formula>
-			<comment>8 8
-			</comment>
-		</query>
-		<query>
-			<formula>Pr [gPath&lt;=420] (&lt;&gt; t&gt;=100)
-			</formula>
-			<comment>6 6
-			</comment>
-		</query>
-		<query>
-			<formula>Pr [&lt;=200] (&lt;&gt; (sum(i:id_t) waitList[i]&gt;0)&gt;5 &amp;&amp; t&gt;100)
-			</formula>
-			<comment>在200时间单位内，最终排队队列大于10的概率
 			</comment>
 		</query>
 		<query>
@@ -532,55 +497,19 @@ system Global,Vehicle,Controller,Timer,In_Channel,Out_Channel;
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t &lt;=5](&lt;&gt; Vehicle(1).CrossIntersection )
+			<formula>Pr [t &lt;=100](&lt;&gt; Vehicle(1).CrossIntersection)
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>simulate 10 [&lt;=50] {vNum}
 			</formula>
 			<comment>
 			</comment>
 		</query>
 		<query>
 			<formula>A[]not deadlock
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt;  Vehicle(0).CrossIntersection
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Pr [t&lt;=1000] (&lt;&gt; (sum (i:id_t) Vehicle(i).CrossIntersection))
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Pr [t&lt;=1000] (&lt;&gt; exists (i :id_t) waitList[i]&gt;3)
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Pr [t&lt;=10] (&lt;&gt; (sum(i:id_t)  (waitList[i]) ))
-			</formula>
-			<comment>所有等待车辆之和的概率分布
-			</comment>
-		</query>
-		<query>
-			<formula>simulate 1 [t&lt;=100] {sum(i:id_t)  waitList[i]&gt;0 }
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>simulate 1 [t&lt;=100] {len }
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>simulate 1  [&lt;=200] {sum(i:id_t)  waitList[i]&gt;0 }
 			</formula>
 			<comment>
 			</comment>

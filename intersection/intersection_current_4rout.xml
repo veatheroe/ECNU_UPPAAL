@@ -118,11 +118,14 @@ id_t pop()
 }
 bool checkConflit(id_t current,int len){
     int index = 0;
-    for(index = 0;index&lt;len;index++){
-        if(mat[index][current]==1)
-            return true;
+    if(len&gt;0){
+        for(index = 0;index&lt;len;index++){
+            if(mat[index][current]==0)
+                return false;
+        }
+        return true;
     }
-    return false;
+    return true;
 }</declaration>
 		<location id="id0" x="-263" y="-127">
 			<urgent/>
@@ -447,6 +450,30 @@ system Vehicle,Controller,Timer,In_Channel,Out_Channel;
 		</query>
 		<query>
 			<formula>Pr [t&lt;=1000](&lt;&gt; vNum &gt;=10)
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>A[] Vehicle(0).ApproachingNotConfirmed imply len&gt;=0
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>Pr [t &lt;=100]([] (forall(i:id_t) (Vehicle(i).ApproachingNotConfirmed imply Vehicle(i).CrossIntersection)))
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>Pr [t &lt;=100](&lt;&gt; Vehicle(0).CrossIntersection &amp;&amp; Vehicle(1).CrossIntersection)
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>Pr [t &lt;=100](&lt;&gt; exists(i :id_t) Vehicle(i).CrossIntersection)
 			</formula>
 			<comment>
 			</comment>

@@ -10,35 +10,23 @@ const int travelTime = 4;
 int initial = 0;
 const int t_0 = 1;
 const int t_app_H = 5; 
-const int N = 12;
+const int N = 4;
 typedef int[0,N-1] id_t;
 //four single line matrix
-int mat[4][4] = {{0,0,1,0},
+int matrix_t[4][4] = {{0,0,1,0},
                  {0,0,0,1},
                  {1,0,0,0},
                  {0,1,0,0}};
-//eight line matrix
-int matrix_t[12][12] = {{0,1,0,0,1,1,1,1,1,0,1,1},
-                          {1,0,1,0,1,1,1,1,0,0,1,1},
-                          {0,1,0,0,1,1,1,0,1,1,1,1},
-                          {0,1,0,0,0,1,0,0,1,1,1,1},
-                          {0,1,1,0,0,1,1,1,1,1,1,0},
-                          {1,1,1,1,1,0,0,1,1,1,0,1},
-                          {1,1,1,0,1,0,0,0,1,0,0,1},
-                          {1,1,0,0,1,1,0,0,1,0,1,1},
-                          {1,0,1,1,1,1,0,1,0,0,1,1},
-                          {0,0,1,1,1,1,0,1,0,0,1,0},
-                          {1,1,1,1,1,0,0,1,1,1,0,1},
-                          {0,1,1,1,0,1,1,1,1,0,1,0}};
+
 //how long did one Vehicle waiting in the ApproachingNotConfirmed state
-int waitList[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
+int waitList[4] = {0,0,0,0};
 broadcast chan request[N],request2[N],confirm[N],confirm2[N],cross[N],alloc[N], popFirst;
 
 
 //const int delay = 1;
 const int tout = 4;
 const int tout_resend = 8;
-const int tout_wait = 5;
+const int tout_wait = 8;
 int[0, N] list[N+1];
 int[0, N] len;
 
@@ -49,6 +37,7 @@ int testtemp = 0;
 int vPath[N];
 hybrid clock pathTime[N];
 hybrid clock gPath;
+hybrid clock totalTravelTime;
 </declaration>
 	<template>
 		<name x="5" y="5">Controller</name>
@@ -196,6 +185,7 @@ checkConflit(e,len)</label>
 		<parameter>const id_t id</parameter>
 		<declaration>// Place local declarations here.
 clock t_local_v;
+clock localTravelTime;
 
 bool requestSent;
 int vdt = 0;
@@ -258,8 +248,10 @@ accumulate(id)</label>
 			<source ref="id7"/>
 			<target ref="id4"/>
 			<label kind="synchronisation" x="-748" y="-136">cross[id]!</label>
-			<label kind="assignment" x="-790" y="-170">waitList[id] = 0,vNum++,
-vPath[id] =0</label>
+			<label kind="assignment" x="-892" y="-195">waitList[id] = 0,vNum++,
+vPath[id] =0,
+totalTravelTime =totalTravelTime + localTravelTime,
+localTravelTime = 0</label>
 		</transition>
 		<transition>
 			<source ref="id6"/>
@@ -278,13 +270,15 @@ vPath[id] =1</label>
 			<source ref="id4"/>
 			<target ref="id5"/>
 			<label kind="synchronisation" x="-560" y="-246">request[id]!</label>
-			<label kind="assignment" x="-646" y="-229">t_local_v:=0,requestSent:=1</label>
+			<label kind="assignment" x="-646" y="-229">t_local_v:=0,requestSent:=1,
+localTravelTime = 0</label>
 		</transition>
 	</template>
 	<template>
 		<name>Global</name>
 		<location id="id8" x="0" y="0">
-			<label kind="invariant" x="-144" y="17">gPath' ==sum(i:id_t) vPath[i]</label>
+			<label kind="invariant" x="-144" y="17">totalTravelTime' == 0 &amp;&amp;
+gPath' ==sum(i:id_t) vPath[i]</label>
 		</location>
 		<init ref="id8"/>
 	</template>
@@ -478,6 +472,18 @@ system Global,Vehicle,Controller,Timer,In_Channel,Out_Channel;
     </system>
 	<queries>
 		<query>
+			<formula>simulate 10 [&lt;=300] {totalTravelTime/(vNum+1)}
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>Pr [t&lt;=200](&lt;&gt;  vNum&gt;0 &amp;&amp;totalTravelTime/vNum&gt;25 )
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
 			<formula>Pr[pathTime[1]&lt;=10](&lt;&gt; In_Channel(1).delay&lt;10)
 			</formula>
 			<comment>
@@ -504,7 +510,7 @@ system Global,Vehicle,Controller,Timer,In_Channel,Out_Channel;
 		<query>
 			<formula>Pr [gPath&lt;=420] (&lt;&gt; t&gt;=100)
 			</formula>
-			<comment>8 8
+			<comment>8 8 
 			</comment>
 		</query>
 		<query>
@@ -550,13 +556,13 @@ system Global,Vehicle,Controller,Timer,In_Channel,Out_Channel;
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t&lt;=1000] (&lt;&gt; (sum (i:id_t) Vehicle(i).CrossIntersection))
+			<formula>Pr [t&lt;=1000] (&lt;&gt; (sum (i:id_t) Vehicle(i).CrossIntersection)) 
 			</formula>
 			<comment>
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t&lt;=1000] (&lt;&gt; exists (i :id_t) waitList[i]&gt;3)
+			<formula>Pr [t&lt;=1000] (&lt;&gt; exists (i :id_t) waitList[i]&gt;3) 
 			</formula>
 			<comment>
 			</comment>
