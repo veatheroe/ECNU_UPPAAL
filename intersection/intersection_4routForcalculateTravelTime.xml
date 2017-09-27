@@ -23,7 +23,8 @@ int waitList[4] = {0,0,0,0};
 broadcast chan request[N],request2[N],confirm[N],confirm2[N],cross[N],alloc[N], popFirst;
 
 
-//const int delay = 1;
+const double d = 2.0;
+
 const int tout = 4;
 const int tout_resend = 8;
 const int tout_wait = 8;
@@ -404,7 +405,7 @@ int poisonNum(int lambda){
 		</location>
 		<location id="id13" x="195" y="0">
 			<name x="204" y="-34">getRequest</name>
-			<label kind="invariant" x="185" y="17">in_clock[id] &lt;=delay</label>
+			<label kind="invariant" x="185" y="17">in_clock[id] &lt;=d</label>
 		</location>
 		<init ref="id12"/>
 		<transition>
@@ -445,7 +446,7 @@ int poisonNum(int lambda){
 		</location>
 		<location id="id15" x="222" y="0">
 			<name x="212" y="-34">getRequest</name>
-			<label kind="invariant" x="212" y="-51">out_clock[id] &lt;=delay</label>
+			<label kind="invariant" x="212" y="-51">out_clock[id] &lt;=d</label>
 		</location>
 		<init ref="id14"/>
 		<transition>
@@ -478,7 +479,7 @@ system Global,Vehicle,Controller,Timer,In_Channel,Out_Channel;
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t&lt;=200](&lt;&gt;  vNum&gt;0 &amp;&amp;totalTravelTime/vNum&gt;25 )
+			<formula>Pr [t&lt;=200](&lt;&gt;  vNum&gt;0 &amp;&amp;totalTravelTime/vNum&gt;=12)
 			</formula>
 			<comment>
 			</comment>
@@ -510,7 +511,7 @@ system Global,Vehicle,Controller,Timer,In_Channel,Out_Channel;
 		<query>
 			<formula>Pr [gPath&lt;=420] (&lt;&gt; t&gt;=100)
 			</formula>
-			<comment>8 8 
+			<comment>8 8
 			</comment>
 		</query>
 		<query>
@@ -556,13 +557,13 @@ system Global,Vehicle,Controller,Timer,In_Channel,Out_Channel;
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t&lt;=1000] (&lt;&gt; (sum (i:id_t) Vehicle(i).CrossIntersection)) 
+			<formula>Pr [t&lt;=1000] (&lt;&gt; (sum (i:id_t) Vehicle(i).CrossIntersection))
 			</formula>
 			<comment>
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t&lt;=1000] (&lt;&gt; exists (i :id_t) waitList[i]&gt;3) 
+			<formula>Pr [t&lt;=1000] (&lt;&gt; exists (i :id_t) waitList[i]&gt;3)
 			</formula>
 			<comment>
 			</comment>

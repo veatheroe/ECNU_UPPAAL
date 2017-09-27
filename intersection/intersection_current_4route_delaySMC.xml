@@ -47,7 +47,8 @@ clock   in_clock[N];
 clock out_clock[N];
 int testtemp = 0;
 hybrid clock dClock = 0.5;
-
+double delayArray[10] = {0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4};
+int index = 0;
 </declaration>
 	<template>
 		<name x="5" y="5">Controller</name>
@@ -275,7 +276,7 @@ accumulate(id)</label>
 		</transition>
 	</template>
 	<template>
-		<name>Timer</name>
+		<name>Monitor</name>
 		<parameter>id_t id</parameter>
 		<declaration>clock t_local_m;
 int old_id = 10;
@@ -435,45 +436,51 @@ len--</label>
 	<template>
 		<name>Control_Delay</name>
 		<declaration>clock localT;</declaration>
-		<location id="id15" x="-68" y="-59">
-			<label kind="invariant" x="-119" y="-42">localT&lt;=50&amp;&amp;
+		<location id="id15" x="431" y="-59">
+			<label kind="invariant" x="380" y="-42">localT&lt;=60&amp;&amp;
 dClock'==0</label>
 		</location>
-		<location id="id16" x="-178" y="-59">
-			<label kind="invariant" x="-246" y="-42">dClock'==0.1&amp;&amp;
+		<location id="id16" x="321" y="-59">
+			<label kind="invariant" x="253" y="-42">dClock'==0.1&amp;&amp;
 localT&lt;=2</label>
 		</location>
-		<location id="id17" x="-340" y="-59">
-			<label kind="invariant" x="-400" y="-42">localT&lt;=50&amp;&amp;
+		<location id="id17" x="91" y="-59">
+			<label kind="invariant" x="31" y="-42">localT&lt;=60&amp;&amp;
 dClock' ==0</label>
 		</location>
 		<init ref="id17"/>
 		<transition>
 			<source ref="id15"/>
 			<target ref="id16"/>
-			<label kind="assignment" x="-76" y="-170">localT = 0</label>
-			<nail x="26" y="-59"/>
-			<nail x="26" y="-144"/>
-			<nail x="-178" y="-144"/>
+			<label kind="assignment" x="423" y="-170">localT = 0</label>
+			<nail x="525" y="-59"/>
+			<nail x="525" y="-144"/>
+			<nail x="321" y="-144"/>
 		</transition>
 		<transition>
 			<source ref="id16"/>
 			<target ref="id15"/>
-			<label kind="assignment" x="-161" y="-110">localT = 0,vNum = 0</label>
+			<label kind="assignment" x="338" y="-110">localT = 0,vNum = 0</label>
 		</transition>
 		<transition>
 			<source ref="id17"/>
 			<target ref="id16"/>
-			<label kind="assignment" x="-322" y="-59">localT = 0</label>
+			<label kind="assignment" x="177" y="-59">localT = 0</label>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
 // List one or more processes to be composed into a system.
-system Vehicle,Controller,Timer,In_Channel,Out_Channel,Control_Delay;
+system Vehicle,Controller,Monitor,In_Channel,Out_Channel,Control_Delay;
     </system>
 	<queries>
 		<query>
-			<formula>Pr [dClock&lt;=2] (&lt;&gt; t&lt;=50 &amp;&amp; vNum&gt;=18 || t&gt;52 &amp;&amp;t&lt;102 &amp;&amp; vNum&gt;=18 || t&gt;=104 &amp;&amp;t&lt;=154 &amp;&amp; vNum&gt;=18 || t&gt;=156 &amp;&amp;t&lt;=206 &amp;&amp; vNum&gt;=18 || t&gt;=208 &amp;&amp;t&lt;=258 &amp;&amp; vNum&gt;=18)
+			<formula>Pr [dClock&lt;=3](&lt;&gt; t&lt;=30 &amp;&amp;vNum&gt;=100)
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>Pr [dClock&lt;=3] (&lt;&gt; t&lt;=60 &amp;&amp; vNum&gt;=10 || t&gt;62 &amp;&amp;t&lt;122 &amp;&amp; vNum&gt;=10 || t&gt;=124 &amp;&amp;t&lt;=184 &amp;&amp; vNum&gt;=10 || t&gt;=186 &amp;&amp;t&lt;=246 &amp;&amp; vNum&gt;=10 || t&gt;=248 &amp;&amp;t&lt;=308 &amp;&amp; vNum&gt;=10)
 			</formula>
 			<comment>
 			</comment>
@@ -516,6 +523,12 @@ system Vehicle,Controller,Timer,In_Channel,Out_Channel,Control_Delay;
 		</query>
 		<query>
 			<formula>Vehicle(1).ApproachingNotConfirmed --&gt; Vehicle(1).ApproachingConfirmed
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>simulate 1 [&lt;=4000] {vNum,dClock}
 			</formula>
 			<comment>
 			</comment>

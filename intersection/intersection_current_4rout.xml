@@ -35,7 +35,7 @@ int waitList[4] = {0,0,0,0};
 broadcast chan request[N],request2[N],confirm[N],confirm2[N],cross[N],alloc[N], popFirst;
 
 
-const int delay = 1;
+const double delay = 2.5;
 const int tout = 4;
 const int tout_resend = 8;
 const int tout_wait = 8;
@@ -89,7 +89,9 @@ void enqueue(id_t element)
     int i = 0;
     int j = 0;
     int idx = 0;
-
+    list[len] = element+1;
+    len = len + 1;
+/*
     for(i=0; i&lt;len; i++) {
         if (list[i] == element + 1) {
             flag = 1;
@@ -98,10 +100,9 @@ void enqueue(id_t element)
     }
 
     if (flag == 0) {
-        list[len] = element+1;
-        len = len + 1;
+
     }
-    /*else if (flag == 1 &amp;&amp; idx &lt; len-1) {
+    else if (flag == 1 &amp;&amp; idx &lt; len-1) {
          for (j=idx; j&lt;len-1; j++) {
                list[j] = list[j+1];
          }
@@ -274,7 +275,7 @@ accumulate(id)</label>
 		</transition>
 	</template>
 	<template>
-		<name>Timer</name>
+		<name>Monitor</name>
 		<parameter>id_t id</parameter>
 		<declaration>clock t_local_m;
 int old_id = 10;
@@ -376,7 +377,7 @@ len--</label>
 		</transition>
 	</template>
 	<template>
-		<name>In_Channel</name>
+		<name>Channel_In</name>
 		<parameter>id_t id</parameter>
 		<location id="id11" x="-85" y="0">
 			<name x="-110" y="-34">Idle</name>
@@ -404,7 +405,7 @@ len--</label>
 		</transition>
 	</template>
 	<template>
-		<name>Out_Channel</name>
+		<name>Channel_Out</name>
 		<parameter>id_t id</parameter>
 		<location id="id13" x="-76" y="0">
 			<name x="-86" y="-34">Idle</name>
@@ -433,23 +434,17 @@ len--</label>
 	</template>
 	<system>// Place template instantiations here.
 // List one or more processes to be composed into a system.
-system Vehicle,Controller,Timer,In_Channel,Out_Channel;
+system Vehicle,Controller,Monitor,Channel_In,Channel_Out;
     </system>
 	<queries>
 		<query>
-			<formula>Pr [&lt;=1000] (&lt;&gt; waitList[0] == 8)
+			<formula>Pr [t&lt;=60] (&lt;&gt; vNum&gt;=5)
 			</formula>
 			<comment>
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t&lt;=100] (&lt;&gt; t&lt;=1000)
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Pr [t&lt;=1000](&lt;&gt; vNum &gt;=10)
+			<formula>Pr [#&lt;=1000](&lt;&gt; vNum &gt;=10)
 			</formula>
 			<comment>
 			</comment>
@@ -461,7 +456,31 @@ system Vehicle,Controller,Timer,In_Channel,Out_Channel;
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t &lt;=100]([] (forall(i:id_t) (Vehicle(i).ApproachingNotConfirmed imply Vehicle(i).CrossIntersection)))
+			<formula>Pr [t&lt;=100]  (&lt;&gt; not deadlock)
+			</formula>
+			<comment>无法处理deadlock 谓词
+			</comment>
+		</query>
+		<query>
+			<formula>Pr[#&lt;=500]([] (sum(i:id_t) Vehicle(i).CrossIntersection)&lt;=2)
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>Pr([] [0,20] Vehicle(3).ApproachingNotConfirmed imply(&lt;&gt; [0,20] Vehicle(3).CrossIntersection) )
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>Pr([] [0,200] (forall(i:id_t) forall(j:id_t)(Vehicle(i).ApproachingNotConfirmed imply(&lt;&gt; [0,200] Vehicle(j).CrossIntersection) &amp;&amp; i==j)))
+			</formula>
+			<comment>该语句存在问题,forall exists 在该句表达中存在问题 缺少布尔类型？
+			</comment>
+		</query>
+		<query>
+			<formula>Pr [t &lt;=100]([] Vehicle(1).ApproachingNotConfirmed imply [&lt;&gt; Vehicle(1).CrossIntersection])
 			</formula>
 			<comment>
 			</comment>
@@ -479,7 +498,7 @@ system Vehicle,Controller,Timer,In_Channel,Out_Channel;
 			</comment>
 		</query>
 		<query>
-			<formula>Pr [t &lt;=100](&lt;&gt; Vehicle(1).CrossIntersection)
+			<formula>Pr [t &lt;=20](&lt;&gt; Vehicle(1).CrossIntersection)
 			</formula>
 			<comment>
 			</comment>
